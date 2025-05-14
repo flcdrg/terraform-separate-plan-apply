@@ -12,6 +12,16 @@ stages:
         pool:
           vmImage: "ubuntu-latest"
         steps:
-          - script: |
-              echo "Hello world"
-            displayName: "Run Hello World"
+          - task: ms-devlabs.custom-terraform-tasks.custom-terraform-installer-task.TerraformInstaller@1 # Need full name to avoid naming clash with other extension
+            inputs:
+              terraformVersion: 'latest'
+
+          - task: TerraformTask@5
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: 'rg-tf-plan-apply-australiaeast'
+              backendAzureRmResourceGroupName: 'rg-tfdemo-state-australiaeast'
+              backendAzureRmStorageAccountName: 'sttfdemostateausteast'
+              backendAzureRmContainerName: 'plan-apply-tfstate'
+              backendAzureRmKey: 'terraform.tfstate'
