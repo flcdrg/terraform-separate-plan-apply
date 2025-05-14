@@ -17,6 +17,7 @@ stages:
               terraformVersion: 'latest'
 
           - task: TerraformTask@5
+            displayName: Terraform init
             inputs:
               provider: 'azurerm'
               command: 'init'
@@ -26,3 +27,11 @@ stages:
               backendAzureRmStorageAccountName: 'sttfdemostateausteast'
               backendAzureRmContainerName: 'plan-apply-tfstate'
               backendAzureRmKey: 'terraform.tfstate'
+          
+          - task: TerraformTask@5
+            displayName: Terraform Plan
+            inputs:
+              provider: 'azurerm'
+              command: 'plan'
+              commandOptions: '-input=false'
+              environmentServiceNameAzureRM: 'rg-tf-plan-apply-australiaeast'
