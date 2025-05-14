@@ -20,6 +20,7 @@ stages:
             inputs:
               provider: 'azurerm'
               command: 'init'
+              backendAzureRmUseEntraIdForAuthentication: true
               backendServiceArm: 'rg-tf-plan-apply-australiaeast'
               backendAzureRmResourceGroupName: 'rg-tfdemo-state-australiaeast'
               backendAzureRmStorageAccountName: 'sttfdemostateausteast'
