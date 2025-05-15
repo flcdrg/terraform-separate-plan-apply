@@ -14,24 +14,24 @@ stages:
         steps:
           - task: ms-devlabs.custom-terraform-tasks.custom-terraform-installer-task.TerraformInstaller@1 # Need full name to avoid naming clash with other extension
             inputs:
-              terraformVersion: 'latest'
+              terraformVersion: "latest"
 
-          - task: TerraformTask@5
+          - task: TerraformTaskV4@4
             displayName: Terraform init
             inputs:
-              provider: 'azurerm'
-              command: 'init'
+              provider: "azurerm"
+              command: "init"
               backendAzureRmUseEntraIdForAuthentication: true
-              backendServiceArm: 'rg-tf-plan-apply-australiaeast'
-              backendAzureRmResourceGroupName: 'rg-tfdemo-state-australiaeast'
-              backendAzureRmStorageAccountName: 'sttfdemostateausteast'
-              backendAzureRmContainerName: 'plan-apply-tfstate'
-              backendAzureRmKey: 'terraform.tfstate'
-          
-          - task: TerraformTask@5
+              backendServiceArm: "rg-tf-plan-apply-australiaeast"
+              backendAzureRmResourceGroupName: "rg-tfdemo-state-australiaeast"
+              backendAzureRmStorageAccountName: "sttfdemostateausteast"
+              backendAzureRmContainerName: "plan-apply-tfstate"
+              backendAzureRmKey: "terraform.tfstate"
+
+          - task: TerraformTaskV4@4
             displayName: Terraform Plan
             inputs:
-              provider: 'azurerm'
-              command: 'plan'
-              commandOptions: '-input=false'
-              environmentServiceNameAzureRM: 'rg-tf-plan-apply-australiaeast'
+              provider: "azurerm"
+              command: "plan"
+              commandOptions: "-input=false"
+              environmentServiceNameAzureRM: "rg-tf-plan-apply-australiaeast"
