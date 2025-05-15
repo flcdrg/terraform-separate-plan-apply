@@ -51,7 +51,7 @@ stages:
             inputs:
               provider: "azurerm"
               command: "plan"
-              commandOptions: -input=false -out=$(Build.ArtifactStagingDirectory)/plan.tfplan -var 'date=$(Build.BuildId)'
+              commandOptions: -input=false -out=$(Build.ArtifactStagingDirectory)/plan.tfplan -var date=$(Build.BuildId)
               environmentServiceNameAzureRM: "rg-tf-plan-apply-australiaeast"
               workingDirectory: "terraform"
 
