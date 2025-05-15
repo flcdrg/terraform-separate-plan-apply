@@ -32,6 +32,7 @@ stages:
               backendAzureRmStorageAccountName: "sttfdemostateausteast"
               backendAzureRmContainerName: "plan-apply-tfstate"
               backendAzureRmKey: "terraform.tfstate"
+              workingDirectory: "terraform"
 
           # Use V4 tasks due to bug in V5 - https://github.com/microsoft/azure-pipelines-terraform/issues/299
           - task: TerraformTaskV4@4
@@ -41,12 +42,20 @@ stages:
               command: "plan"
               commandOptions: "-input=false -out=$(Build.ArtifactStagingDirectory)/plan.tfplan"
               environmentServiceNameAzureRM: "rg-tf-plan-apply-australiaeast"
+              workingDirectory: "terraform"
 
           - task: PublishPipelineArtifact@1
             displayName: Publish Terraform Plan
             inputs:
               targetPath: "$(Build.ArtifactStagingDirectory)/plan.tfplan"
               artifact: "terraform-plan"
+              publishLocation: "pipeline"
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Terraform
+            inputs:
+              targetPath: terraform
+              artifact: "terraform"
               publishLocation: "pipeline"
 
   - ${{ if eq(variables['Build.SourceBranchName'], 'main') }}: # Only run this stage on main branch
@@ -66,6 +75,16 @@ stages:
                     - download: current
                       artifact: terraform-plan
 
+                    - task: DownloadPipelineArtifact@2
+                      displayName: Download Terraform
+                      inputs:
+                        source: "current"
+                        artifact: terraform
+                        targetPath: terraform
+
+                    - script: ls -alR
+                      displayName: List files
+
                     - task: ms-devlabs.custom-terraform-tasks.custom-terraform-installer-task.TerraformInstaller@1 # Need full name to avoid naming clash with other extension
                       inputs:
                         terraformVersion: "latest"
@@ -81,6 +100,7 @@ stages:
                         backendAzureRmStorageAccountName: "sttfdemostateausteast"
                         backendAzureRmContainerName: "plan-apply-tfstate"
                         backendAzureRmKey: "terraform.tfstate"
+                        workingDirectory: "terraform"
 
                     - task: TerraformTaskV4@4
                       displayName: Terraform Apply
@@ -89,3 +109,4 @@ stages:
                         command: "apply"
                         commandOptions: "-input=false -auto-approve -no-color $(Pipeline.Workspace)/terraform-plan/plan.tfplan"
                         environmentServiceNameAzureRM: "rg-tf-plan-apply-australiaeast"
+                        workingDirectory: "terraform"
