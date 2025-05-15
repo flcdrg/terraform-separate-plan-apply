@@ -10,4 +10,8 @@ resource "azurerm_storage_account" "storage" {
     default_action = "Deny"
     ip_rules       = []
   }
+
+  tags = {
+    "date" = var.date
+  }
 }

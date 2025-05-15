@@ -1,12 +1,9 @@
-trigger:
-  branches:
-    include:
-      - main
+# This pipeline uses a Cache task to cache Terraform files, rather than pipeline artifacts.
+# Potentially problematic as the authentication for the apply stage may expire.
 
-pr:
-  branches:
-    include:
-      - main
+trigger: none
+
+pr: none
 
 stages:
   - stage: Plan
@@ -17,6 +14,12 @@ stages:
         pool:
           vmImage: "ubuntu-latest"
         steps:
+          - task: Cache@2
+            displayName: Terraform Cache
+            inputs:
+              key: terraform | $(Agent.OS) | "$(Build.BuildNumber)" | $(Build.SourceVersion)
+              path: $(System.DefaultWorkingDirectory)/terraform
+
           - task: ms-devlabs.custom-terraform-tasks.custom-terraform-installer-task.TerraformInstaller@1 # Need full name to avoid naming clash with other extension
             inputs:
               terraformVersion: "latest"
@@ -51,23 +54,9 @@ stages:
             inputs:
               provider: "azurerm"
               command: "plan"
-              commandOptions: "-input=false -out=$(Build.ArtifactStagingDirectory)/plan.tfplan -var 'date=$(Build.BuildId)'"
+              commandOptions: "-input=false -out=plan.tfplan"
               environmentServiceNameAzureRM: "rg-tf-plan-apply-australiaeast"
               workingDirectory: "terraform"
-
-          - task: PublishPipelineArtifact@1
-            displayName: Publish Terraform Plan
-            inputs:
-              targetPath: "$(Build.ArtifactStagingDirectory)/plan.tfplan"
-              artifact: "terraform-plan"
-              publishLocation: "pipeline"
-
-          - task: PublishPipelineArtifact@1
-            displayName: Publish Terraform
-            inputs:
-              targetPath: "$(Build.ArtifactStagingDirectory)/terraform.zip"
-              artifact: terraform
-              publishLocation: "pipeline"
 
   - ${{ if eq(variables['Build.SourceBranchName'], 'main') }}: # Only run this stage on main branch
       - stage: Apply
@@ -83,19 +72,11 @@ stages:
               runOnce:
                 deploy:
                   steps:
-                    - download: current
-                      artifact: terraform-plan
-
-                    - download: current
-                      artifact: terraform
-
-                    - task: ExtractFiles@1
-                      displayName: "Extract Terraform"
+                    - task: Cache@2
+                      displayName: Terraform Cache
                       inputs:
-                        archiveFilePatterns: "$(Pipeline.Workspace)/terraform/terraform.zip"
-                        destinationFolder: "terraform"
-                        cleanDestinationFolder: true
-                        overwriteExistingFiles: true
+                        key: terraform | $(Agent.OS) | "$(Build.BuildNumber)" | $(Build.SourceVersion)
+                        path: $(System.DefaultWorkingDirectory)/terraform
 
                     - script: ls -alR
                       displayName: List files
@@ -105,24 +86,10 @@ stages:
                         terraformVersion: "latest"
 
                     - task: TerraformTaskV4@4
-                      displayName: Terraform init
-                      inputs:
-                        provider: "azurerm"
-                        command: "init"
-                        backendAzureRmUseEntraIdForAuthentication: true
-                        backendServiceArm: "rg-tf-plan-apply-australiaeast"
-                        backendAzureRmResourceGroupName: "rg-tfdemo-state-australiaeast"
-                        backendAzureRmStorageAccountName: "sttfdemostateausteast"
-                        backendAzureRmContainerName: "plan-apply-tfstate"
-                        backendAzureRmKey: "terraform.tfstate"
-                        workingDirectory: "terraform"
-                        commandOptions: -input=false
-
-                    - task: TerraformTaskV4@4
                       displayName: Terraform Apply
                       inputs:
                         provider: "azurerm"
                         command: "apply"
-                        commandOptions: "-input=false -auto-approve -no-color $(Pipeline.Workspace)/terraform-plan/plan.tfplan"
+                        commandOptions: "-input=false -auto-approve -no-color plan.tfplan"
                         environmentServiceNameAzureRM: "rg-tf-plan-apply-australiaeast"
                         workingDirectory: "terraform"
