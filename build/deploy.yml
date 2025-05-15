@@ -3,6 +3,11 @@ trigger:
     include:
       - main
 
+pr:
+  branches:
+    include:
+      - main
+
 stages:
   - stage: Plan
     displayName: "Terraform Plan"
@@ -28,10 +33,59 @@ stages:
               backendAzureRmContainerName: "plan-apply-tfstate"
               backendAzureRmKey: "terraform.tfstate"
 
+          # Use V4 tasks due to bug in V5 - https://github.com/microsoft/azure-pipelines-terraform/issues/299
           - task: TerraformTaskV4@4
             displayName: Terraform Plan
             inputs:
               provider: "azurerm"
               command: "plan"
-              commandOptions: "-input=false"
+              commandOptions: "-input=false -out=$(Build.ArtifactStagingDirectory)/plan.tfplan"
               environmentServiceNameAzureRM: "rg-tf-plan-apply-australiaeast"
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Terraform Plan
+            inputs:
+              targetPath: "$(Build.ArtifactStagingDirectory)/plan.tfplan"
+              artifact: "terraform-plan"
+              publishLocation: "pipeline"
+
+  - ${{ if eq(variables['Build.SourceBranchName'], 'main') }}: # Only run this stage on main branch
+      - stage: Apply
+        displayName: "Terraform Apply"
+        dependsOn: Plan
+        jobs:
+          - deployment: Apply
+            displayName: "Terraform Apply"
+            environment: EnvironmentApproval
+            pool:
+              vmImage: "ubuntu-latest"
+            strategy:
+              runOnce:
+                deploy:
+                  steps:
+                    - download: current
+                      artifact: terraform-plan
+
+                    - task: ms-devlabs.custom-terraform-tasks.custom-terraform-installer-task.TerraformInstaller@1 # Need full name to avoid naming clash with other extension
+                      inputs:
+                        terraformVersion: "latest"
+
+                    - task: TerraformTaskV4@4
+                      displayName: Terraform init
+                      inputs:
+                        provider: "azurerm"
+                        command: "init"
+                        backendAzureRmUseEntraIdForAuthentication: true
+                        backendServiceArm: "rg-tf-plan-apply-australiaeast"
+                        backendAzureRmResourceGroupName: "rg-tfdemo-state-australiaeast"
+                        backendAzureRmStorageAccountName: "sttfdemostateausteast"
+                        backendAzureRmContainerName: "plan-apply-tfstate"
+                        backendAzureRmKey: "terraform.tfstate"
+
+                    - task: TerraformTaskV4@4
+                      displayName: Terraform Apply
+                      inputs:
+                        provider: "azurerm"
+                        command: "apply"
+                        commandOptions: "-input=false -auto-approve -no-color $(Pipeline.Workspace)/terraform-plan/plan.tfplan"
+                        environmentServiceNameAzureRM: "rg-tf-plan-apply-australiaeast"
