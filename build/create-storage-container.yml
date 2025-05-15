@@ -1,11 +1,13 @@
 trigger: none
 
+pr: none
+
 steps:
   - task: AzureCLI@2
     inputs:
       azureSubscription: rg-tf-plan-apply-australiaeast
-      scriptType: 'bash'
-      scriptLocation: 'inlineScript'
+      scriptType: "bash"
+      scriptLocation: "inlineScript"
       inlineScript: |
         az storage container create --name plan-apply-tfstate --account-name sttfdemostateausteast
-    displayName: 'Create Storage Container'
+    displayName: "Create Storage Container"
