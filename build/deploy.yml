@@ -21,6 +21,16 @@ stages:
             inputs:
               terraformVersion: "latest"
 
+          # Zip up terraform directory files. Do this before terraform init so we don't include the .terraform directory in the zip file.
+          - task: ArchiveFiles@2
+            displayName: "Archive Terraform"
+            inputs:
+              rootFolderOrFile: terraform              
+              includeRootFolder: false
+              archiveType: "zip"
+              archiveFile: "$(Build.ArtifactStagingDirectory)/terraform.zip"
+              replaceExistingArchive: true
+
           - task: TerraformTaskV4@4
             displayName: Terraform init
             inputs:
@@ -33,6 +43,7 @@ stages:
               backendAzureRmContainerName: "plan-apply-tfstate"
               backendAzureRmKey: "terraform.tfstate"
               workingDirectory: "terraform"
+              commandOptions: -input=false
 
           # Use V4 tasks due to bug in V5 - https://github.com/microsoft/azure-pipelines-terraform/issues/299
           - task: TerraformTaskV4@4
@@ -54,8 +65,8 @@ stages:
           - task: PublishPipelineArtifact@1
             displayName: Publish Terraform
             inputs:
-              targetPath: terraform
-              artifact: "terraform"
+              targetPath: "$(Build.ArtifactStagingDirectory)/terraform.zip"
+              artifact: terraform
               publishLocation: "pipeline"
 
   - ${{ if eq(variables['Build.SourceBranchName'], 'main') }}: # Only run this stage on main branch
@@ -75,12 +86,16 @@ stages:
                     - download: current
                       artifact: terraform-plan
 
-                    - task: DownloadPipelineArtifact@2
-                      displayName: Download Terraform
+                    - download: current
+                      artifact: terraform
+
+                    - task: ExtractFiles@1
+                      displayName: "Extract Terraform"
                       inputs:
-                        source: "current"
-                        artifact: terraform
-                        targetPath: terraform
+                        archiveFilePatterns: "$(Pipeline.Workspace)/terraform/terraform.zip"
+                        destinationFolder: "terraform"
+                        cleanDestinationFolder: true
+                        overwriteExistingFiles: true
 
                     - script: ls -alR
                       displayName: List files
@@ -101,6 +116,7 @@ stages:
                         backendAzureRmContainerName: "plan-apply-tfstate"
                         backendAzureRmKey: "terraform.tfstate"
                         workingDirectory: "terraform"
+                        commandOptions: -input=false
 
                     - task: TerraformTaskV4@4
                       displayName: Terraform Apply
