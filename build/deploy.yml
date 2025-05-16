@@ -44,6 +44,7 @@ stages:
               backendAzureRmKey: "terraform.tfstate"
               workingDirectory: "terraform"
               commandOptions: -input=false
+              backendAzureRmUseEnvironmentVariablesForAuthentication: true
 
           # Use V4 tasks due to bug in V5 - https://github.com/microsoft/azure-pipelines-terraform/issues/299
           - task: TerraformTaskV4@4
