@@ -117,6 +117,7 @@ stages:
                         backendAzureRmKey: "terraform.tfstate"
                         workingDirectory: "terraform"
                         commandOptions: -input=false
+                        backendAzureRmUseEnvironmentVariablesForAuthentication: true
 
                     - task: TerraformTaskV4@4
                       displayName: Terraform Apply
