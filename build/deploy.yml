@@ -36,7 +36,7 @@ stages:
             inputs:
               provider: "azurerm"
               command: "init"
-              backendAzureRmUseEntraIdForAuthentication: true
+              #backendAzureRmUseEntraIdForAuthentication: true
               backendServiceArm: "rg-tf-plan-apply-australiaeast"
               backendAzureRmResourceGroupName: "rg-tfdemo-state-australiaeast"
               backendAzureRmStorageAccountName: "sttfdemostateausteast"
@@ -105,12 +105,13 @@ stages:
                       inputs:
                         terraformVersion: "latest"
 
+                    # https://github.com/microsoft/azure-pipelines-terraform/issues/201
                     - task: TerraformTaskV4@4
                       displayName: Terraform init
                       inputs:
                         provider: "azurerm"
                         command: "init"
-                        backendAzureRmUseEntraIdForAuthentication: true
+                        #backendAzureRmUseEntraIdForAuthentication: true
                         backendServiceArm: "rg-tf-plan-apply-australiaeast"
                         backendAzureRmResourceGroupName: "rg-tfdemo-state-australiaeast"
                         backendAzureRmStorageAccountName: "sttfdemostateausteast"
