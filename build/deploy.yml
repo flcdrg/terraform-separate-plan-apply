@@ -129,3 +129,19 @@ stages:
                         commandOptions: "-input=false -auto-approve -no-color $(Pipeline.Workspace)/terraform-plan/plan.tfplan"
                         environmentServiceNameAzureRM: "rg-tf-plan-apply-australiaeast"
                         workingDirectory: "terraform"
+
+                    - task: TerraformTaskV4@4
+                      displayName: Terraform output
+                      inputs:
+                        provider: "azurerm"
+                        command: "output"
+                        environmentServiceNameAzureRM: "rg-tf-plan-apply-australiaeast"
+                        workingDirectory: "terraform"
+                        jsonOutputVariablesPath: "$(Build.ArtifactStagingDirectory)/outputs.json"
+
+                    - script: env -0 | sort -z | tr '\0' '\n'
+                      displayName: "List environment variables"
+
+                    - script: |
+                        cat $(Build.ArtifactStagingDirectory)/outputs.json
+                      displayName: "List outputs"
