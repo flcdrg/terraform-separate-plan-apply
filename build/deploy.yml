@@ -132,6 +132,7 @@ stages:
 
                     - task: TerraformTaskV4@4
                       displayName: Terraform output
+                      name: tfOutput
                       inputs:
                         provider: "azurerm"
                         command: "output"
@@ -143,5 +144,7 @@ stages:
                       displayName: "List environment variables"
 
                     - script: |
-                        cat $(Build.ArtifactStagingDirectory)/outputs.json
+                        echo "jsonOutputVariablesPath: $(tfOutput.jsonOutputVariablesPath)"
+
+                        cat $(tfOutput.jsonOutputVariablesPath)
                       displayName: "List outputs"
